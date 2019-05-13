@@ -1,0 +1,56 @@
+version: '1'
+services:
+  mongo:
+    image: 'mongo:latest'
+    volumes:
+      - './data/db:/data/db'
+    ports:
+      - 27017:27017
+  parse:
+    image: 'parseplatform/parse-server:latest'
+    environment:
+      - PARSE_SERVER_APPLICATION_ID=设置你的APPID
+      - PARSE_SERVER_MASTER_KEY=设置你的MasterKey
+      - PARSE_SERVER_DATABASE_URI=mongodb://mongo:27017/parse
+      - PARSE_SERVER_MOUNT_PATH=/parse
+    ports:
+      - '1337:1337'
+    links:
+      - mongo
+  parse-dashboard:
+    image: 'parseplatform/parse-dashboard'
+    ports:
+      - '4040:4040'
+    environment:
+      - PARSE_DASHBOARD_ALLOW_INSECURE_HTTP=true
+      - PARSE_DASHBOARD_SERVER_URL=/api
+      - PARSE_DASHBOARD_MASTER_KEY=设置你的MasterKey
+      - PARSE_DASHBOARD_APP_ID=设置你的AppID
+      - PARSE_DASHBOARD_APP_NAME=设置你的App名字
+      - PARSE_DASHBOARD_USER_ID=Mongodb的管理ID
+      - PARSE_DASHBOARD_USER_PASSWORD=Mongodb的管理密码
+      - MOUNT_PATH=/dashboard/
+    links:
+      - parse
+  portainer:
+    image: portainer/portainer
+    ports:
+      - "9000:9000"
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+  nginx:
+    image: 'nginx:latest'
+    ports:
+      - '8081:80'
+      - '443:443'
+    volumes:
+      - './nginx:/etc/nginx/sites-enabled'
+      - './nginx/default.conf:/etc/nginx/conf.d/default.conf'
+    links:
+      - parse-dashboard
+      - parse
+      - portainer
+volumes:
+  portainer_data:
